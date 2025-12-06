@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 import numpy as np
 from scipy.signal import spectrogram
@@ -7,6 +7,8 @@ from pydub import AudioSegment
 import hashlib
 import os
 import shutil
+import psycopg2
+from collections import defaultdict
 
 app = FastAPI()
 
@@ -18,9 +20,47 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# just storing in memory for now, will add db later
-songs = {}
-next_id = 1
+# database connection
+DB_PARAMS = {
+    "dbname": "postgres",
+    "user": "postgres", 
+    "password": "admin123",  # change this later, vulnerable
+    "host": "localhost",
+    "port": 5432
+}
+
+def get_db():
+    return psycopg2.connect(**DB_PARAMS)
+
+def init_database():
+    conn = get_db()
+    cur = conn.cursor()
+    
+    # songs table
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS songs (
+            id SERIAL PRIMARY KEY,
+            title VARCHAR(255),
+            artist VARCHAR(255)
+        )
+    """)
+    
+    # fingerprints table
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS fingerprints (
+            id SERIAL PRIMARY KEY,
+            song_id INT REFERENCES songs(id) ON DELETE CASCADE,
+            hash BIGINT,
+            offset_time BIGINT
+        )
+    """)
+    
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_hash ON fingerprints(hash)")
+    
+    conn.commit()
+    cur.close()
+    conn.close()
+    print("db initialized")
 
 def get_fingerprints(filepath):
     print(f"processing {filepath}")
@@ -32,11 +72,9 @@ def get_fingerprints(filepath):
     if np.max(np.abs(samples)) > 0:
         samples /= np.max(np.abs(samples))
     
-    # make spectrogram
     f, t, Sxx = spectrogram(samples, fs=44100, nperseg=4096, noverlap=2048)
     Sxx = np.log1p(Sxx * 1000)
     
-    # find peaks
     local_max = maximum_filter(Sxx, size=(20, 20)) == Sxx
     threshold = np.mean(Sxx) * 1.5
     peaks = local_max & (Sxx > threshold)
@@ -47,7 +85,6 @@ def get_fingerprints(filepath):
     
     print(f"got {len(peak_list)} peaks")
     
-    # make hashes
     hashes = []
     for i in range(len(peak_list)):
         t1, f1 = peak_list[i]
@@ -73,45 +110,121 @@ def get_fingerprints(filepath):
     return hashes
 
 
+def save_song(title, artist, hashes):
+    conn = get_db()
+    cur = conn.cursor()
+    
+    # insert song
+    cur.execute(
+        "INSERT INTO songs (title, artist) VALUES (%s, %s) RETURNING id",
+        (title, artist)
+    )
+    song_id = cur.fetchone()[0]
+    
+    # insert fingerprints
+    for h, offset in hashes:
+        cur.execute(
+            "INSERT INTO fingerprints (song_id, hash, offset_time) VALUES (%s, %s, %s)",
+            (song_id, int(h), int(offset))
+        )
+    
+    conn.commit()
+    cur.close()
+    conn.close()
+    
+    print(f"saved song {song_id}")
+    return song_id
+
+
 def find_match(sample_hashes):
-    print(f"trying to match {len(sample_hashes)} hashes")
+    print(f"matching {len(sample_hashes)} hashes")
     
-    if not songs:
-        print("no songs in db yet")
-        return None
+    conn = get_db()
+    cur = conn.cursor()
     
-    matches = {}
-    sample_set = set(h for h, _ in sample_hashes)
+    # get all matching hashes from db
+    hash_list = [int(h) for h, _ in sample_hashes]
+    cur.execute(
+        "SELECT song_id, hash, offset_time FROM fingerprints WHERE hash = ANY(%s)",
+        (hash_list,)
+    )
     
-    for song_id, data in songs.items():
-        db_set = set(h for h, _ in data["hashes"])
-        common = sample_set & db_set
-        matches[song_id] = len(common)
-        print(f"song {song_id}: {len(common)} matches")
+    matches = cur.fetchall()
+    cur.close()
+    conn.close()
     
     if not matches:
+        print("no matches found")
         return None
     
-    best = max(matches, key=matches.get)
-    count = matches[best]
+    print(f"found {len(matches)} matching hashes in db")
     
-    print(f"best: {best} ({count} matches)")
+    # count matches per song - trying time alignment too
+    candidates = defaultdict(list)
+    sample_dict = {h: offset for h, offset in sample_hashes}
     
-    if count < 5:
+    for song_id, h, db_offset in matches:
+        if h in sample_dict:
+            sample_offset = sample_dict[h]
+            time_diff = db_offset - sample_offset
+            candidates[song_id].append(time_diff)
+    
+    if not candidates:
         return None
     
-    return best
+    # find song with most consistent time alignment
+    best_song = None
+    best_score = 0
+    
+    for song_id, time_diffs in candidates.items():
+        # count how many match around same time offset
+        # this is still pretty basic but better than before
+        hist = defaultdict(int)
+        for td in time_diffs:
+            bucket = td // 100  # 100ms buckets
+            hist[bucket] += 1
+        
+        score = max(hist.values())
+        print(f"song {song_id}: score {score}")
+        
+        if score > best_score:
+            best_score = score
+            best_song = song_id
+    
+    if best_score < 5:
+        return None
+    
+    return best_song
+
+
+def get_song_info(song_id):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT title, artist FROM songs WHERE id = %s", (song_id,))
+    result = cur.fetchone()
+    cur.close()
+    conn.close()
+    return result
+
+
+@app.on_event("startup")
+def startup():
+    init_database()
 
 
 @app.get("/")
 def home():
-    return {"status": "running", "songs": len(songs)}
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM songs")
+    count = cur.fetchone()[0]
+    cur.close()
+    conn.close()
+    return {"status": "running", "songs": count}
 
 
 @app.post("/add-song")
-async def add_song(file: UploadFile = File(...), title: str = "", artist: str = ""):
-    global next_id
-    
+async def add_song(file: UploadFile = File(...), title: str = Form(...), artist: str = Form(...)):
     print(f"adding: {title} - {artist}")
     
     path = f"temp_{file.filename}"
@@ -124,15 +237,9 @@ async def add_song(file: UploadFile = File(...), title: str = "", artist: str = 
     if not hashes:
         return {"error": "couldn't process file"}
     
-    songs[next_id] = {
-        "title": title or "unknown",
-        "artist": artist or "unknown",
-        "hashes": hashes
-    }
+    song_id = save_song(title, artist, hashes)
     
-    result = {"id": next_id, "title": title, "hashes": len(hashes)}
-    next_id += 1
-    return result
+    return {"id": song_id, "title": title, "artist": artist, "hashes": len(hashes)}
 
 
 @app.post("/identify")
@@ -154,16 +261,18 @@ async def identify(file: UploadFile = File(...)):
     if not song_id:
         return {"match": None}
     
+    info = get_song_info(song_id)
+    
     return {
         "match": {
             "id": song_id,
-            "title": songs[song_id]["title"],
-            "artist": songs[song_id]["artist"]
+            "title": info[0],
+            "artist": info[1]
         }
     }
 
 
 if __name__ == "__main__":
     import uvicorn
-    print("starting server...")
+    print("starting server with database support...")
     uvicorn.run(app, host="0.0.0.0", port=8000)

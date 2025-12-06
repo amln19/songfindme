@@ -4,3 +4,4 @@ python-multipart
 numpy
 scipy
 pydub
+psycopg2-binary
