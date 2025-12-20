@@ -1,0 +1,59 @@
+.app {
+  max-width: 600px;
+  margin: 50px auto;
+  padding: 20px;
+  text-align: center;
+}
+
+h1 {
+  margin-bottom: 30px;
+}
+
+.upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+input[type="file"] {
+  padding: 10px;
+  border: 2px solid #ccc;
+  border-radius: 5px;
+}
+
+button {
+  padding: 12px 24px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+button:hover {
+  background: #0056b3;
+}
+
+button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.result {
+  padding: 20px;
+  border: 2px solid #28a745;
+  border-radius: 5px;
+  background: #f8f9fa;
+}
+
+.result h2 {
+  margin-top: 0;
+  color: #28a745;
+}
+
+.result p {
+  margin: 10px 0;
+  text-align: left;
+}

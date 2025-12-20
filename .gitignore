@@ -1,2 +1,16 @@
+# python
+__pycache__/
+*.pyc
 venv/
 .venv/
+
+# backend uploads
+backend/uploads/
+backend/temp_*
+
+# node
+node_modules/
+frontend/dist/
+
+# os
+.DS_Store

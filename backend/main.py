@@ -8,9 +8,10 @@ from database import init_db, save_song, find_match, get_song_info
 
 app = FastAPI()
 
+# cors for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -22,12 +23,12 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 @app.on_event("startup")
 def startup():
     init_db()
-    print("server ready")
+    print("backend ready")
 
 
 @app.get("/")
 def home():
-    return {"status": "ok"}
+    return {"status": "ok", "message": "audio fingerprinting api"}
 
 
 @app.post("/add-song")
@@ -51,11 +52,15 @@ async def add_song(
         song_id = save_song(title, artist, int(duration), hashes)
         
         return {
+            "message": "song added",
             "song_id": song_id,
             "title": title,
             "artist": artist,
             "fingerprints": len(hashes)
         }
+    except Exception as e:
+        print(f"error: {e}")
+        return {"error": str(e)}
     finally:
         if os.path.exists(path):
             os.remove(path)
@@ -73,22 +78,32 @@ async def identify(file: UploadFile = File(...)):
         hashes, _ = fingerprint(path)
         
         if not hashes:
-            return {"match": None, "message": "couldn't process audio"}
+            return {
+                "match_song_id": None,
+                "title": None,
+                "artist": None,
+                "message": "couldn't process audio"
+            }
         
         song_id = find_match(hashes)
         
         if not song_id:
-            return {"match": None}
+            return {
+                "match_song_id": None,
+                "title": None,
+                "artist": None
+            }
         
         info = get_song_info(song_id)
         
         return {
-            "match": {
-                "song_id": song_id,
-                "title": info[0],
-                "artist": info[1]
-            }
+            "match_song_id": song_id,
+            "title": info[0],
+            "artist": info[1]
         }
+    except Exception as e:
+        print(f"error: {e}")
+        return {"error": str(e)}
     finally:
         if os.path.exists(path):
             os.remove(path)
