@@ -1,0 +1,9 @@
+{
+  "name": "songfindme",
+  "version": "1.0.0",
+  "scripts": {
+    "dev:backend": "cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+    "dev:frontend": "cd frontend && npm run dev",
+    "setup": "chmod +x setup.sh && ./setup.sh"
+  }
+}

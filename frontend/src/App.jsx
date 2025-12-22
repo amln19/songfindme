@@ -1,72 +1,28 @@
-import { useState } from 'react'
-import './App.css'
+import { Route, Routes } from "react-router";
+import { AuthProvider } from "./context/AuthContext";
 
-const API_URL = 'http://localhost:8000'
+import HomePage from "./pages/HomePage";
+import AddSongPage from "./pages/AddSongPage";
+import IdentifySongPage from "./pages/IdentifySongPage";
+import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
+import HistoryPage from "./pages/HistoryPage";
 
-function App() {
-  const [file, setFile] = useState(null)
-  const [result, setResult] = useState(null)
-  const [loading, setLoading] = useState(false)
-
-  const handleIdentify = async () => {
-    if (!file) {
-      alert('please select a file')
-      return
-    }
-
-    setLoading(true)
-    setResult(null)
-
-    const formData = new FormData()
-    formData.append('file', file)
-
-    try {
-      const res = await fetch(`${API_URL}/identify`, {
-        method: 'POST',
-        body: formData
-      })
-
-      const data = await res.json()
-      setResult(data)
-    } catch (err) {
-      console.error(err)
-      alert('error identifying song')
-    } finally {
-      setLoading(false)
-    }
-  }
-
+const App = () => {
   return (
-    <div className="app">
-      <h1>audio fingerprinting</h1>
-      
-      <div className="upload-section">
-        <input 
-          type="file" 
-          accept="audio/*"
-          onChange={(e) => setFile(e.target.files[0])}
-        />
-        
-        <button onClick={handleIdentify} disabled={loading}>
-          {loading ? 'identifying...' : 'identify song'}
-        </button>
+    <AuthProvider>
+      <div className="min-h-screen bg-base-300">
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/add-song" element={<AddSongPage />} />
+          <Route path="/identify-song" element={<IdentifySongPage />} />
+          <Route path="/history" element={<HistoryPage />} />
+        </Routes>
       </div>
+    </AuthProvider>
+  );
+};
 
-      {result && (
-        <div className="result">
-          {result.match_song_id ? (
-            <>
-              <h2>match found!</h2>
-              <p><strong>title:</strong> {result.title}</p>
-              <p><strong>artist:</strong> {result.artist}</p>
-            </>
-          ) : (
-            <h2>no match found</h2>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-export default App
+export default App;

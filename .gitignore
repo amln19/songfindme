@@ -1,16 +1,125 @@
-# python
+# ===================================
+# Operating Systems
+# ===================================
+.DS_Store
+Thumbs.db
+*~
+
+# ===================================
+# IDEs & Editors
+# ===================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# ===================================
+# Python
+# ===================================
+# Bytecode
 __pycache__/
+*.py[cod]
+*$py.class
 *.pyc
+*.pyo
+*.pyd
+*.so
+
+# Virtual Environments
 venv/
 .venv/
+env/
+ENV/
+.Python
 
-# backend uploads
-backend/uploads/
-backend/temp_*
+# Distribution / Packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# node
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.pytest_cache/
+
+# ===================================
+# Node.js / Frontend
+# ===================================
 node_modules/
-frontend/dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+lerna-debug.log*
 
-# os
-.DS_Store
+# Production Build Output
+frontend/dist/
+frontend/build/
+dist-ssr/
+*.local
+
+# ===================================
+# Environment Variables
+# ===================================
+.env
+.env.*
+!.env.example
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ===================================
+# Application Specific
+# ===================================
+# Backend uploads directory (keep structure, ignore files)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Database files (if using SQLite for testing)
+*.db
+*.sqlite
+*.sqlite3
+
+# ===================================
+# Logs
+# ===================================
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+
+# ===================================
+# Temporary Files
+# ===================================
+*.tmp
+*.temp
+*.bak
+*.swp
+*~.nib
