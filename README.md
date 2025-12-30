@@ -1,6 +1,6 @@
 # 🎵 SongFindMe - Full Stack Audio Recognition System
 
-**SongFindMe** is a robust audio fingerprinting and recognition application inspired by Shazam. It allows users to identify songs by recording audio via their microphone or uploading files. The system uses a custom-built, noise-tolerant fingerprinting algorithm to match audio clips against a database of stored tracks.
+**SongFindMe** is a robust audio fingerprinting and recognition application. It allows users to identify songs by recording audio via their microphone or uploading files. The system uses a custom-built, noise-tolerant fingerprinting algorithm to match audio clips against a database of stored tracks.
 
 Built with **FastAPI (Python)** for the backend and **React + Vite + Tailwind CSS** for the frontend.
 
@@ -390,5 +390,3 @@ For questions, feature requests, or bug reports, please open a GitHub issue.
 Contributions are welcome! Feel free to fork the repository and submit pull requests.
 
 ---
-
-*Built with passion for audio technology and software engineering excellence.*
