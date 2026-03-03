@@ -1,392 +1,205 @@
-# 🎵 SongFindMe - Full Stack Audio Recognition System
+# SongFindMe
 
-**SongFindMe** is a robust audio fingerprinting and recognition application. It allows users to identify songs by recording audio via their microphone or uploading files. The system uses a custom-built, noise-tolerant fingerprinting algorithm to match audio clips against a database of stored tracks.
+A self-hosted audio recognition web app — like Shazam, but yours. Record a clip from your microphone or upload an audio file, and SongFindMe identifies the song by matching spectral fingerprints against your personal music database.
 
-Built with **FastAPI (Python)** for the backend and **React + Vite + Tailwind CSS** for the frontend.
-
----
-
-## 🚀 Features
-
-### 🎧 Core Audio Engine
-
-* **Robust Fingerprinting:** Uses **2D spectrogram peak finding** (local maximum filtering) to generate noise-resistant audio constellations
-* **Advanced Matching:** Implements **Time-Delta Histogramming** with sliding window smoothing and **Temporal Spread Checks** to filter false positives
-* **Format Support:** Supports MP3, WAV, M4A, FLAC, and OGG (via FFmpeg)
-* **Smart Audio Processing:** Automatic noise gating and normalization
-
-### 💻 Frontend (React)
-
-* **Real-time Recording:** "Tap to Identify" button with visual feedback
-* **Smart Retry Logic:** Automatically escalates from 5s quick check → 10s → 15s deep scan
-* **Responsive UI:** Clean, modern interface built with **Tailwind CSS** and **DaisyUI**
-* **Optimized Performance:** Memoized context, proper cleanup on unmount
-
-### 🔐 User System
-
-* **Authentication:** JWT-based Login and Signup with bcrypt password hashing
-* **Role-Based Access:**
-  * **Admins:** Upload and index new songs into the database
-  * **Users:** Identify songs and view their personal **Search History**
-  * **Guests:** Identify songs (without history tracking)
-* **Password Validation:** Minimum 6 characters required
-* **Username Validation:** 3-50 characters
+Built as a full-stack project with a React frontend and a FastAPI backend powered by a real audio-fingerprinting algorithm (constellation maps + combinatorial hashing), backed by PostgreSQL.
 
 ---
 
-## 🗃️ Architecture
+## Features
 
-```text
-SongFindMe/
-├── backend/
-│   ├── app/
-│   │   ├── main.py          # API routes & endpoints
-│   │   ├── config.py        # Environment configuration
-│   │   ├── fingerprint.py   # DSP & spectrogram processing
-│   │   ├── match.py         # Histogram matching algorithm
-│   │   ├── database.py      # PostgreSQL connection & queries
-│   │   ├── auth.py          # JWT & password hashing
-│   │   └── uploads/         # Temp storage (auto-cleanup)
-│   ├── requirements.txt
-│   └── .env                 # Create from .env.example
-│
-└── frontend/
-    ├── src/
-    │   ├── components/      # ListeningButton, NavBar
-    │   ├── pages/           # Home, Login, AddSong, History
-    │   ├── context/         # AuthContext (with memoization)
-    │   ├── api.js           # Centralized API configuration
-    │   └── App.jsx
-    ├── .env                 # Create from .env.example
-    └── package.json
-```
+- 🎤 **Live Microphone Recognition** — Tap to listen, auto-identifies in progressive 5 / 10 / 15-second checks
+- 📁 **File Upload Identification** — Upload any audio clip for instant matching
+- 🧠 **Acoustic Fingerprinting Engine** — Constellation-map peak extraction with SHA-1 combinatorial hashing
+- 🔍 **Robust Matching Algorithm** — IDF-weighted scoring, sliding-window histogram alignment, temporal spread validation, and confidence ratio testing
+- 🔐 **JWT Authentication** — Register, login, and role-based access (user / admin)
+- 🛡️ **Admin Song Management** — Only admins can add songs to the database
+- 📜 **Identification History** — Logged-in users get a full history of every song they've identified
+- 🎨 **Modern UI** — DaisyUI + Tailwind CSS with the "abyss" theme, toast notifications, animated listening states
+- 🚀 **Guest Access** — Identify songs without creating an account (history won't be saved)
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
-### Backend
-* **Python 3.9+**
-* **FastAPI** - Modern async web framework
-* **NumPy & SciPy** - Signal processing
-* **PyDub** - Audio format conversion
-* **PostgreSQL** with `psycopg2` - Relational database
-* **JWT** with `python-jose` - Authentication
-* **bcrypt** - Password hashing
+**Frontend:** React 19, React Router 7, Vite 7, Tailwind CSS 4, DaisyUI 5, Lucide React icons, React Hot Toast
 
-### Frontend
-* **React 18** with **Vite** - Fast development
-* **Tailwind CSS** + **DaisyUI** - Styling
-* **React Router** - Navigation
-* **Lucide React** - Icons
-* **React Hot Toast** - Notifications
+**Backend:** Python, FastAPI, Uvicorn, PostgreSQL, psycopg2, NumPy, SciPy, pydub (FFmpeg), python-jose (JWT), bcrypt / Passlib
 
-### System Dependencies
-* **FFmpeg** - Audio processing (required)
+**Audio Processing:** FFmpeg, SciPy spectrogram, 2D local maximum filtering, SHA-1 constellation hashing
 
 ---
 
-## 📦 Installation & Setup
+## Getting Started
 
 ### Prerequisites
 
-1. **PostgreSQL** installed and running
-2. **FFmpeg** installed and in system PATH
-3. **Node.js 18+** and **Python 3.9+** installed
+| Requirement | Version |
+| ----------- | ------- |
+| Python      | 3.9+    |
+| Node.js     | 18+     |
+| PostgreSQL  | 13+     |
+| FFmpeg      | any     |
 
----
-
-### 1️⃣ Backend Setup
+### Installation
 
 ```bash
-# Navigate to project root
-cd SongFindMe
+# 1. Clone the repository
+git clone https://github.com/amln19/songfindme.git
+cd songfindme
 
-# Create and activate virtual environment
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-
-# Install dependencies
-pip install -r backend/requirements.txt
-
-# Create .env file from example
-cp backend/.env.example backend/.env
-
-# Edit backend/.env with your configuration:
-# - Set secure DB_PASSWORD
-# - Generate a strong SECRET_KEY (min 32 chars)
-# - Adjust CORS_ORIGINS if needed
+# 2. Run the automated setup script
+npm run setup
 ```
 
-**Important:** Generate a secure SECRET_KEY:
-```bash
-python -c "import secrets; print(secrets.token_urlsafe(32))"
+The setup script will:
+
+- Create a Python virtual environment (`.venv`)
+- Install all backend Python dependencies
+- Install all frontend Node dependencies
+- Generate template `.env` files if they don't exist
+
+### Configure Environment
+
+Create a `backend/.env` file (or edit the one generated by setup):
+
+```env
+DB_NAME=songfindme
+DB_USER=postgres
+DB_PASSWORD=your_password
+DB_HOST=localhost
+DB_PORT=5432
+SECRET_KEY=your-random-secret-key
 ```
 
-**Run the backend:**
+Create a `frontend/.env` file (optional — defaults to `http://localhost:8000`):
+
+```env
+VITE_API_URL=http://localhost:8000
+```
+
+### Create the Database
+
 ```bash
+# Using psql
+createdb songfindme
+```
+
+Tables are auto-created on first backend startup (`users`, `songs`, `fingerprints`, `history`).
+
+### Run the App
+
+Open two terminals:
+
+```bash
+# Terminal 1 — Backend
 npm run dev:backend
-# Or: uvicorn backend.app.main:app --reload
-```
 
-Server runs on `http://localhost:8000`
-
----
-
-### 2️⃣ Frontend Setup
-
-```bash
-# Navigate to frontend
-cd frontend
-
-# Install dependencies
-npm install
-
-# Create .env file from example
-cp .env.example .env
-
-# Edit frontend/.env if backend URL differs from default
-# VITE_API_URL=http://localhost:8000
-
-# Go back to root and run development server
-cd ..
+# Terminal 2 — Frontend
 npm run dev:frontend
 ```
 
-Client runs on `http://localhost:5173`
+The frontend will be available at **http://localhost:5173** and the API at **http://localhost:8000**.
 
 ---
 
-## 🎧 Usage Guide
+## Environment Variables
 
-### 1. Initial Setup
-
-1. Start both backend and frontend servers
-2. The database will initialize automatically on first startup
-3. Open `http://localhost:5173` in your browser
-
-### 2. Creating an Admin User
-
-**Option A: Via Database (Recommended)**
-```sql
--- Connect to PostgreSQL
-psql -U postgres -d postgres
-
--- Create admin user (replace with your details)
-INSERT INTO users (username, password_hash, role) 
-VALUES ('admin', '$2b$12$...', 'admin');
-
--- Or update existing user
-UPDATE users SET role = 'admin' WHERE username = 'your_username';
-```
-
-**Option B: Via API**
-```bash
-# Sign up normally, then manually update role in database
-```
-
-### 3. Adding Songs (Admin Only)
-
-1. Log in with admin credentials
-2. Click **"Add Song"** in the navbar
-3. Upload an audio file (MP3, WAV, etc.)
-4. Fill in title and artist
-5. Wait for fingerprinting to complete (~5-15 seconds)
-
-**Note:** The uploaded file is automatically deleted after processing
-
-### 4. Identifying Songs
-
-**Method 1: Real-time Recording (Homepage)**
-1. Click the **microphone button**
-2. Play music near your device
-3. The system analyzes in stages:
-   - **5s check** → Quick match attempt
-   - **10s check** → If no match, continues listening
-   - **15s check** → Final deep analysis
-
-**Method 2: File Upload**
-1. Go to **"Identify Song"** page
-2. Upload an audio clip
-3. Get instant results
-
-### 5. View History
-
-1. Log in (guests can't see history)
-2. Click **"History"** in the navbar
-3. See all previously identified songs with timestamps
+| Variable                      | Description                                                        | Required |
+| ----------------------------- | ------------------------------------------------------------------ | -------- |
+| `DB_NAME`                     | PostgreSQL database name                                           | Yes      |
+| `DB_USER`                     | PostgreSQL username                                                | Yes      |
+| `DB_PASSWORD`                 | PostgreSQL password                                                | Yes      |
+| `DB_HOST`                     | Database host                                                      | No       |
+| `DB_PORT`                     | Database port (default `5432`)                                     | No       |
+| `SECRET_KEY`                  | JWT signing secret — **change in production**                      | Yes      |
+| `ALGORITHM`                   | JWT algorithm (default `HS256`)                                    | No       |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Token expiry in minutes (default `30`)                             | No       |
+| `CORS_ORIGINS`                | Comma-separated allowed origins                                    | No       |
+| `UPLOAD_DIR`                  | Temporary upload directory (default `backend/uploads`)             | No       |
+| `MAX_UPLOAD_SIZE_MB`          | Max upload size in MB (default `50`)                               | No       |
+| `VITE_API_URL`                | Backend API URL for the frontend (default `http://localhost:8000`) | No       |
 
 ---
 
-## 🧠 How the Algorithm Works
+## How It Works
 
-### 1. Fingerprinting Pipeline
+### Adding a Song (Admin)
+
+1. An admin uploads a full audio file with title and artist.
+2. The backend converts the audio to mono 44.1 kHz 16-bit PCM via **pydub / FFmpeg**.
+3. A spectrogram is computed (Hann window, 4096-sample FFT, 50% overlap).
+4. **2D local maximum filtering** extracts constellation-map peaks from the log-scaled spectrogram.
+5. Peaks are paired using **combinatorial hashing** (anchor + target, fan-out of 10) and hashed with SHA-1 truncated to 64-bit integers.
+6. The song and all fingerprints are inserted atomically into PostgreSQL.
+
+### Identifying a Song
+
+1. A user records a clip via the microphone or uploads a file.
+2. The same fingerprinting pipeline runs on the clip.
+3. Clip hashes are bulk-queried against the database.
+4. The matching engine scores each candidate song using:
+   - **IDF weighting** — penalizes common (noisy) hashes
+   - **Time-offset histogram** — aligns clip time to database time with 50 ms bins
+   - **Temporal spread check** — rejects burst-matches that don't span enough of the clip
+   - **Confidence ratio test** — the top match must outscore the runner-up by ≥ 1.6×
+5. If a confident match is found, the song info is returned (and saved to history for logged-in users).
+
+---
+
+## API Endpoints
+
+| Method | Path        | Auth     | Description                        |
+| ------ | ----------- | -------- | ---------------------------------- |
+| GET    | `/health`   | None     | Health check                       |
+| POST   | `/register` | None     | Create a new user account          |
+| POST   | `/token`    | None     | Login and receive a JWT            |
+| POST   | `/add-song` | Admin    | Upload and fingerprint a song      |
+| POST   | `/identify` | Optional | Identify a song from an audio clip |
+| GET    | `/history`  | User     | Fetch identification history       |
+
+---
+
+## Project Structure
 
 ```
-Audio Input → Spectrogram → Peak Detection → Hash Generation → Database Storage
+songfindme/
+├── backend/
+│   ├── requirements.txt
+│   └── app/
+│       ├── main.py          # FastAPI app, routes, startup
+│       ├── config.py         # Environment variable loading
+│       ├── database.py       # PostgreSQL schema & queries
+│       ├── fingerprint.py    # Audio → spectral fingerprints
+│       ├── match.py          # Fingerprint matching engine
+│       └── auth.py           # JWT + bcrypt authentication
+├── frontend/
+│   ├── package.json
+│   ├── vite.config.js
+│   ├── index.html
+│   └── src/
+│       ├── main.jsx          # React entry point
+│       ├── App.jsx           # Router setup
+│       ├── api.js            # API endpoint config
+│       ├── style.css         # Tailwind + DaisyUI + animations
+│       ├── context/
+│       │   └── AuthContext.jsx
+│       ├── components/
+│       │   ├── ListeningButton.jsx   # Mic recording + auto-identify
+│       │   └── NavBar.jsx
+│       └── pages/
+│           ├── HomePage.jsx
+│           ├── LoginPage.jsx
+│           ├── SignupPage.jsx
+│           ├── AddSongPage.jsx
+│           ├── IdentifySongPage.jsx
+│           └── HistoryPage.jsx
+├── setup.sh
+└── package.json              # Root scripts (dev:backend, dev:frontend)
 ```
 
-**Detailed Steps:**
-
-1. **Audio Normalization**
-   - Convert to mono, 44.1kHz, 16-bit
-   - Apply noise gate (reject if < -70 dBFS)
-   - Normalize amplitude to [-1, 1]
-
-2. **Spectrogram Generation**
-   - FFT window size: 4096 samples
-   - Overlap: 50% (2048 samples)
-   - Logarithmic scaling for perceptual loudness
-
-3. **2D Peak Picking**
-   - Use `scipy.ndimage.maximum_filter` with 20×20 neighborhood
-   - Filter peaks below dynamic threshold (1.5× mean intensity)
-   - Extract (frequency, time) coordinates
-
-4. **Combinatorial Hashing**
-   - For each anchor peak, pair with next 10 target peaks
-   - Hash format: `SHA1(freq1 | freq2 | time_delta)`
-   - Store: `(hash, offset_time)` tuples
-
-### 2. Matching Algorithm
-
-```
-Sample Hashes → DB Lookup → IDF Weighting → Histogram Alignment → Verification
-```
-
-**Key Innovations:**
-
-1. **IDF Weighting**
-   - Penalizes common hashes (like silence/noise)
-   - Weight = `1 / log(1 + occurrence_count)`
-
-2. **Time-Delta Histogramming**
-   - Groups matches by `delta = db_time - sample_time`
-   - True matches cluster in a narrow bin range
-   - Random noise scatters across all bins
-
-3. **Temporal Spread Check**
-   - Ensures matches span ≥15% of sample duration
-   - Rejects "burst" matches from short noise patterns
-
-4. **Confidence Ratio Test**
-   - Requires best match score ≥ 1.6× second-best
-   - Prevents ambiguous results
-
 ---
 
-## 🔐 Security Features
+## License
 
-✅ **Environment Variables:** Secrets stored in `.env` (not committed)  
-✅ **Password Hashing:** bcrypt with automatic salting  
-✅ **JWT Authentication:** Secure token-based auth with expiration  
-✅ **SQL Injection Protection:** Parameterized queries throughout  
-✅ **Input Validation:** Length checks on username/password  
-✅ **Automatic File Cleanup:** Uploaded files deleted after processing  
-✅ **Role-Based Access Control:** Admin-only endpoints protected
-
----
-
-## 🚨 Common Issues & Solutions
-
-### "Could not connect to database"
-- Ensure PostgreSQL is running: `sudo service postgresql start`
-- Check credentials in `backend/.env`
-
-### "FFmpeg not found"
-- Install FFmpeg: `sudo apt install ffmpeg` (Linux) or `brew install ffmpeg` (Mac)
-- Windows: Download from [ffmpeg.org](https://ffmpeg.org) and add to PATH
-
-### "Microphone access denied"
-- Browser needs HTTPS for mic access (except localhost)
-- Check browser permissions in settings
-
-### "No fingerprints generated"
-- Audio may be too quiet (< -70 dBFS)
-- Try increasing volume or use a louder recording
-
-### "Module not found" errors
-- Backend: Activate venv and reinstall: `pip install -r requirements.txt`
-- Frontend: Delete `node_modules` and run `npm install`
-
----
-
-## 📊 Performance Characteristics
-
-| Metric | Typical Value |
-|--------|---------------|
-| Fingerprinting Speed | ~0.5-2s per minute of audio |
-| Matching Speed | < 500ms for 15s clip |
-| Database Size | ~1000-5000 fingerprints per song |
-| Recognition Accuracy | 85-95% with 5+ seconds of clear audio |
-| Noise Tolerance | Robust to background noise, compression artifacts |
-
----
-
-## 🎯 Roadmap & Future Enhancements
-
-**Performance & Scalability:**
-- [ ] Connection pooling for database optimization
-- [ ] Redis caching layer for frequently accessed song metadata
-- [ ] Batch fingerprint insertion optimization
-- [ ] CDN integration for static assets
-
-**Features:**
-- [ ] Mobile app development (iOS/Android)
-- [ ] Admin dashboard with analytics
-- [ ] Playlist generation from history
-- [ ] Social sharing capabilities
-- [ ] Music streaming integration (Spotify, Apple Music)
-
-**Infrastructure:**
-- [ ] Docker containerization
-- [ ] CI/CD pipeline setup
-- [ ] API rate limiting and usage analytics
-- [ ] Comprehensive test suite (unit, integration, E2E)
-- [ ] Cloud deployment guides (AWS, GCP, Azure)
-
----
-
-## 📝 License
-
-MIT License - Open source and free to use. See LICENSE file for details.
-
----
-
-## 🙏 Acknowledgments
-
-**Algorithm research:** Inspired by audio fingerprinting techniques described in [How does Shazam work?](http://coding-geek.com/how-shazam-works/) by Christophe Kalenzaga
-
-**Core Technologies:**
-- FastAPI team for the excellent web framework
-- NumPy and SciPy communities for robust scientific computing
-- React team for the modern frontend library
-- PostgreSQL for reliable data persistence
-
----
-
-## 🏗️ Technical Highlights
-
-**Architecture & Design:**
-- Modern Python async web framework (FastAPI)
-- Advanced audio DSP with spectrogram analysis (NumPy, SciPy)
-- Secure authentication system (JWT, bcrypt)
-- Modern React with hooks and context API
-- RESTful API design with proper separation of concerns
-- Environment-based configuration for deployment flexibility
-
-**Signal Processing:**
-- Custom fingerprinting algorithm inspired by industry leaders
-- Time-frequency domain analysis with 2D peak detection
-- Robust matching with IDF weighting and temporal verification
-- Handles real-world noise and audio compression artifacts
-
----
-
-## 📬 Contact & Contributions
-
-For questions, feature requests, or bug reports, please open a GitHub issue.
-
-Contributions are welcome! Feel free to fork the repository and submit pull requests.
-
----
+This project is licensed under the [MIT License](LICENSE).
